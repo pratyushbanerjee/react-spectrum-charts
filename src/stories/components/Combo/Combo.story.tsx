@@ -15,7 +15,6 @@ import useChartProps from '@hooks/useChartProps';
 import { Axis, Bar, Chart, ChartTooltip, Line } from '@rsc';
 import { Combo } from '@rsc/alpha';
 import { peopleAdoptionComboData, peopleTotalComboData } from '@stories/data/data';
-import { formatTimestamp } from '@stories/storyUtils';
 import { StoryFn } from '@storybook/react';
 import { bindWithProps } from '@test-utils';
 
@@ -87,16 +86,158 @@ const TooltipStory: StoryFn<typeof Combo> = (args): ReactElement => {
 	);
 };
 
+function formatTimestamp(epoch: number): string {
+	const date = new Date(epoch);
+	return date.toLocaleDateString('en-US', {
+		month: 'short',
+		day: 'numeric',
+		year: 'numeric',
+	});
+}
+
+const aggregateData = {
+	1667890800000: {
+		1: 10,
+		2: 10,
+		3: 10,
+		4: 10,
+		total: 40,
+	},
+	1667977200000: {
+		1: 20,
+		2: 20,
+		3: 20,
+		4: 20,
+		total: 80,
+	},
+	1668063600000: {
+		1: 30,
+		2: 30,
+		3: 30,
+		4: 30,
+		total: 120,
+	},
+	1668150000000: {
+		1: 20,
+		2: 20,
+		3: 20,
+		4: 20,
+		total: 80,
+	},
+	1668236400000: {
+		1: 10,
+		2: 10,
+		3: 10,
+		4: 10,
+		total: 40,
+	},
+	1668322800000: {
+		1: 30,
+		2: 30,
+		3: 30,
+		4: 30,
+		total: 120,
+	},
+	1668409200000: {
+		1: 2,
+		2: 2,
+		3: 2,
+		4: 2,
+		total: 8,
+	},
+};
+
+const seriesLabels = {
+	1: 'Category 1',
+	2: 'Category 2',
+	3: 'Category 3',
+	4: 'Category 4',
+	total: 'Total',
+};
+
+const seriesColors = {
+	1: '#0FB5AE',
+	2: '#4046CA',
+	3: '#F68511',
+	4: '#DE3D82',
+};
+
 const DualAxisStory: StoryFn<typeof Combo> = (args): ReactElement => {
 	const chartProps = useChartProps({ ...defaultChartProps, data: peopleTotalComboData });
 	return (
-		<Chart {...chartProps}>
+		<Chart {...chartProps} debug>
 			<Axis position="left" name="people" title="People" grid />
 			<Axis position="right" name="total" title="Total" />
 			<Axis position="bottom" labelFormat="time" baseline ticks />
 			<Combo {...args}>
-				<Bar metric="people" metricAxis="people" />
-				<Line metric="total" metricAxis="total" color={{ value: 'indigo-900' }} scaleType="point" />
+				<Bar metric="people" metricAxis="people" color="series">
+					<ChartTooltip>
+						{(datum) => (
+							<div className="bar-tooltip">
+								<table style={{ width: '100%' }}>
+									<tbody>
+										<tr>
+											<td style={{ paddingRight: '10px' }}>Date</td>
+											<td style={{ textAlign: 'right' }}>
+												{formatTimestamp(datum.datetime as number)}
+											</td>
+										</tr>
+									</tbody>
+								</table>
+								<table>
+									<tbody>
+										{Object.entries(aggregateData[datum.datetime]).map(([key, value]) => (
+											<tr key={key}>
+												<td style={{ paddingRight: '10px' }}>
+													<div
+														style={{
+															width: '10px',
+															height: '10px',
+															backgroundColor: seriesColors[key],
+															display: 'inline-block',
+															marginRight: '5px',
+														}}
+													/>
+												</td>
+												<td style={{ paddingRight: '10px' }}>{seriesLabels[key]}</td>
+												<td style={{ textAlign: 'right' }}>{value as number}</td>
+											</tr>
+										))}
+									</tbody>
+								</table>
+							</div>
+						)}
+					</ChartTooltip>
+				</Bar>
+				<Line
+					metric="total"
+					metricAxis="total"
+					color={{ value: 'indigo-900' }}
+					interactionMode="item"
+					scaleType="point"
+					opacity="isLine"
+				>
+					<ChartTooltip excludeDataKeys={['people']}>
+						{(datum) => (
+							<div className="line-tooltip">
+								<table>
+									<tbody>
+										<tr>
+											<td style={{ paddingRight: '10px' }}>Date</td>
+											<td style={{ textAlign: 'right' }}>
+												{formatTimestamp(datum.datetime as number)}
+											</td>
+										</tr>
+										<tr>
+											<td style={{ paddingRight: '10px' }}>Cumulative number of people</td>
+											<td style={{ textAlign: 'right' }}>{datum.total}</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+						)}
+					</ChartTooltip>
+				</Line>
 			</Combo>
 		</Chart>
 	);
